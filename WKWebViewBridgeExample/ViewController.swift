@@ -134,6 +134,8 @@ class ViewController: UIViewController, WKScriptMessageHandler, WKNavigationDele
     // WKScriptMessageHandler Delegate
     func userContentController(userContentController: WKUserContentController, didReceiveScriptMessage message: WKScriptMessage) {
         
+        print("JS call Native msg name: \(message.name), and msg body: \(message.body)")
+        
         if let messageBody:NSDictionary = message.body as? NSDictionary {
             let idOfTappedButton:String = messageBody["ButtonId"] as! String
             updateColorOfButtonWithId(idOfTappedButton)
@@ -150,7 +152,7 @@ class ViewController: UIViewController, WKScriptMessageHandler, WKNavigationDele
         
          // Script that changes the color of tapped button
         let js2:String = String(format: "var button = document.getElementById('%@'); button.style.backgroundColor='%@';", buttonId,color)
-        
+        //Inject js2 javascript to webpage.
         webView?.evaluateJavaScript(js2, completionHandler: { (AnyObject, NSError) -> Void in
             NSLog("%s", #function)
 
