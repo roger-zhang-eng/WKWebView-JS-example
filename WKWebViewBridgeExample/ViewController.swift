@@ -43,7 +43,6 @@ class ViewController: UIViewController, WKScriptMessageHandler, WKNavigationDele
     
     override func viewDidLoad() {
         super.viewDidLoad()
-       appstore
         // Create a WKWebView instance
         webView = WKWebView (frame: self.view.frame, configuration: webConfig)
         
@@ -66,12 +65,11 @@ class ViewController: UIViewController, WKScriptMessageHandler, WKNavigationDele
         
         let fileName:String =  String("\( NSProcessInfo.processInfo().globallyUniqueString)_TestFile.html")
         
-        var error:NSError?
         let tempHtmlPath:String =  (NSTemporaryDirectory() as NSString).stringByAppendingPathComponent(fileName)
         do {
             try NSFileManager.defaultManager().removeItemAtPath(tempHtmlPath)
-        } catch let error1 as NSError {
-            error = error1
+        } catch let error as NSError {
+            print("viewDidDisappear error: \(error.localizedDescription)")
         }
         
         webView = nil
@@ -85,11 +83,11 @@ class ViewController: UIViewController, WKScriptMessageHandler, WKNavigationDele
     
     // WKNavigationDelegate
     func webView(webView: WKWebView, didFinishNavigation navigation: WKNavigation!) {
-        NSLog("%s", __FUNCTION__)
+        NSLog("%s", #function)
     }
     
     func webView(webView: WKWebView, didFailNavigation navigation: WKNavigation!, withError error: NSError) {
-        NSLog("%s. With Error %@", __FUNCTION__,error)
+        NSLog("%s. With Error %@", #function,error.localizedDescription)
         showAlertWithMessage("Failed to load file with error \(error.localizedDescription)!")
     }
     
@@ -98,17 +96,16 @@ class ViewController: UIViewController, WKScriptMessageHandler, WKNavigationDele
     func loadHtml() {
         // NOTE: Due to a bug in webKit as of iOS 8.1.1 we CANNOT load a local resource when running on device. Once that is fixed, we can get rid of the temp copy
         let mainBundle:NSBundle = NSBundle(forClass: ViewController.self)
-        var error:NSError?
         
-        var fileName:String =  String("\( NSProcessInfo.processInfo().globallyUniqueString)_TestFile.html")
+        let fileName:String =  String("\( NSProcessInfo.processInfo().globallyUniqueString)_TestFile.html")
         
-        var tempHtmlPath:String? = (NSTemporaryDirectory() as NSString).stringByAppendingPathComponent(fileName)
+        let tempHtmlPath:String? = (NSTemporaryDirectory() as NSString).stringByAppendingPathComponent(fileName)
         
         if let htmlPath = mainBundle.pathForResource("TestFile", ofType: "html") {
             do {
                 try NSFileManager.defaultManager().copyItemAtPath(htmlPath, toPath: tempHtmlPath!)
-            } catch var error1 as NSError {
-                error = error1
+            } catch let error as NSError {
+                print("loadHtml error: \(error.localizedDescription)")
             }
             if tempHtmlPath != nil {
                 let requestUrl = NSURLRequest(URL: NSURL(fileURLWithPath: tempHtmlPath!))
@@ -155,7 +152,7 @@ class ViewController: UIViewController, WKScriptMessageHandler, WKNavigationDele
         let js2:String = String(format: "var button = document.getElementById('%@'); button.style.backgroundColor='%@';", buttonId,color)
         
         webView?.evaluateJavaScript(js2, completionHandler: { (AnyObject, NSError) -> Void in
-            NSLog("%s", __FUNCTION__)
+            NSLog("%s", #function)
 
         })
     }
