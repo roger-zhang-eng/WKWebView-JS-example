@@ -11,34 +11,52 @@ import WebKit
 
 class ViewController: UIViewController, WKScriptMessageHandler, WKNavigationDelegate {
     var webView: WKWebView?
+    // Create WKWebViewConfiguration instance
+    let webCfg:WKWebViewConfiguration = WKWebViewConfiguration()
+    // Setup WKUserContentController instance for injecting user script
+    let userController:WKUserContentController = WKUserContentController()
+    
     var buttonClicked:Int = 0
     var colors:[String] = ["0xff00ff","#ff0000","#ffcc00","#ccff00","#ff0033","#ff0099","#cc0099","#0033ff","#0066ff","#ffff00","#0000ff","#0099cc"];
+    
+    let defaulURL = "https://www.maxwellforest.com"
+    var reload = false
+    
     var webConfig:WKWebViewConfiguration {
         get {
-            
-                // Create WKWebViewConfiguration instance
-                let webCfg:WKWebViewConfiguration = WKWebViewConfiguration()
-                
-                // Setup WKUserContentController instance for injecting user script
-                let userController:WKUserContentController = WKUserContentController()
-                
-                // Add a script message handler for receiving  "buttonClicked" event notifications posted from the JS document using window.webkit.messageHandlers.buttonClicked.postMessage script message
-                userController.addScriptMessageHandler(self, name: "buttonClicked")
-            
-                // Get script that's to be injected into the document
-                let js:String = buttonClickEventTriggeredScriptToAddToDocument()
-                
-                // Specify when and where and what user script needs to be injected into the web document
-                let userScript:WKUserScript =  WKUserScript(source: js, injectionTime: WKUserScriptInjectionTime.AtDocumentEnd, forMainFrameOnly: false)
-            
-                // Add the user script to the WKUserContentController instance
-                userController.addUserScript(userScript)
-            
                 // Configure the WKWebViewConfiguration instance with the WKUserContentController
                 webCfg.userContentController = userController;
             
             return webCfg;
         }
+    }
+    
+    func addJSintoWebViewController() {
+        // Add a script message handler for receiving  "buttonClicked" event notifications posted from the JS document using window.webkit.messageHandlers.buttonClicked.postMessage script message
+        userController.addScriptMessageHandler(self, name: "buttonClicked")
+        
+        // Get script that's to be injected into the document
+        let js:String = buttonClickEventTriggeredScriptToAddToDocument()
+        
+        // Specify when and where and what user script needs to be injected into the web document
+        let userScript:WKUserScript =  WKUserScript(source: js, injectionTime: WKUserScriptInjectionTime.AtDocumentEnd, forMainFrameOnly: false)
+        
+        // Add the user script to the WKUserContentController instance
+        userController.addUserScript(userScript)
+    }
+    
+    func injectWhenLoading() {
+        // Add a script message handler for receiving  "buttonClicked" event notifications posted from the JS document using window.webkit.messageHandlers.buttonClicked.postMessage script message
+        userController.addScriptMessageHandler(self, name: "buttonClicked")
+        
+        // Get script that's to be injected into the document
+        let js:String = buttonClickEventTriggeredScriptToAddToDocument()
+        //Inject js javascript to webpage.
+        webView?.evaluateJavaScript(js, completionHandler: { (AnyObject, NSError) -> Void in
+            print("injectWhenLoading OK...")
+            
+        })
+        
     }
     
     override func viewDidLoad() {
@@ -55,10 +73,25 @@ class ViewController: UIViewController, WKScriptMessageHandler, WKNavigationDele
 
     override func viewDidAppear(animated: Bool) {
         super.viewDidAppear(animated)
-                
-        // Load the HTML document
-        loadHtml()
+        let url = NSURL(string: defaulURL)
+        let requestUrl = NSURLRequest(URL: url!)
+        self.webView?.loadRequest(requestUrl)
     }
+    
+    func webView(webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
+        print("Start Nav url: \(webView.URL?.absoluteString)")
+        
+        if(!self.reload) {
+            if webView.URL!.absoluteString == "http://localhost/TestFile.html" {
+                print("Inject JS now.")
+                addJSintoWebViewController()
+                self.reload = true
+            }
+        } else {
+            self.reload = false
+        }
+    }
+
     
     override func viewDidDisappear(animated: Bool) {
         super.viewDidDisappear(animated)
@@ -83,12 +116,25 @@ class ViewController: UIViewController, WKScriptMessageHandler, WKNavigationDele
     
     // WKNavigationDelegate
     func webView(webView: WKWebView, didFinishNavigation navigation: WKNavigation!) {
-        NSLog("%s", #function)
+        print("webView finish nav url: \(webView.URL?.absoluteString)")
+        if self.reload {
+            webView.reload()
+        }
     }
     
     func webView(webView: WKWebView, didFailNavigation navigation: WKNavigation!, withError error: NSError) {
         NSLog("%s. With Error %@", #function,error.localizedDescription)
         showAlertWithMessage("Failed to load file with error \(error.localizedDescription)!")
+    }
+    
+    
+    @IBAction func LoadButtonCliced(sender: UIBarButtonItem) {
+        let url = NSURL(string: "http://localhost/TestFile.html")
+        let requestUrl = NSURLRequest(URL: url!)
+        self.webView?.loadRequest(requestUrl)
+        
+        // Load the HTML document
+        //loadHtml()
     }
     
     
@@ -152,8 +198,11 @@ class ViewController: UIViewController, WKScriptMessageHandler, WKNavigationDele
         
          // Script that changes the color of tapped button
         let js2:String = String(format: "var button = document.getElementById('%@'); button.style.backgroundColor='%@';", buttonId,color)
+        
+        //Call js func 'redHeader'
+        let js3:String = "window.alertFunction()"
         //Inject js2 javascript to webpage.
-        webView?.evaluateJavaScript(js2, completionHandler: { (AnyObject, NSError) -> Void in
+        webView?.evaluateJavaScript(js3, completionHandler: { (AnyObject, NSError) -> Void in
             NSLog("%s", #function)
 
         })
